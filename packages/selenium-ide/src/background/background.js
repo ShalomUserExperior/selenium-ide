@@ -276,3 +276,36 @@ browser.runtime.onInstalled.addListener(() => {
     })
   }
 })
+
+chrome.runtime.onMessageExternal.addListener(
+  function(request, sender, sendResponse) {
+    if (request) {
+      if (request.email) {
+        // if (request.message == "user-data") {
+			let features = 'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=no';
+          //my chrome application initial load screen is index.html
+          myWindow = window.open('index.html','_blank',features);
+		  // sendResponse({status: localStorage['status']});
+		  chrome.storage.local.set(request, function() {
+			console.log('User email is set to ' + request.email);
+		  });
+
+          //if required can send a response back to the web site aswell. I have logged the reply on the web site
+          sendResponse({loginMsg: request.email + 'is logged in selenium IDE'});
+        // }
+      } else if(request.clearStorage){
+			chrome.storage.local.clear(function() {
+			var error = chrome.runtime.lastError;
+			if (error) {
+				console.error(error);
+			}
+		});
+		 myWindow.close();
+		 sendResponse({clearData: 'true'});
+		}
+	}
+	
+    return true;
+  });
+
+  
