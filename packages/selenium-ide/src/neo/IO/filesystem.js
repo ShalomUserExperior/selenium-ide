@@ -87,6 +87,38 @@ function sendSaveProjectEvent(project) {
   browser.runtime.sendMessage(Manager.controller.id, saveMessage)
 }
 
+
+async function postData(url = '', data) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      // 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+      // 'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
+    },
+    body: data // body data type must match "Content-Type" header
+  });
+  return response.json(); // parses JSON response into native JavaScript objects
+}
+
+export function callUE(project){
+  const url= 'http://ec2-3-108-21-241.ap-south-1.compute.amazonaws.com/recordings_add'
+  // const obj = {
+  //   account_id  : 1,
+  //   // name : 'dummy',
+  //   // description : 'From chrome extension',
+  //   steps : project
+  // }
+  const formData = new FormData()
+  formData.append('account_id',1)
+  // formData.append('name','dummy')
+  // formData.append('description','From chrome extension')
+  formData.append('steps',JSON.stringify(project))
+  postData(url,formData).then(data => {
+    console.log(data); // JSON data parsed by `data.json()` call
+  });
+}
+
 function downloadProject(project) {
   return exportProject(project).then(snapshot => {
     if (snapshot) {
@@ -106,6 +138,8 @@ function downloadProject(project) {
         saveAs: true,
         conflictAction: 'overwrite',
       })
+      callUE(project)
+      console.log('save to UE-db', project);
     }
   })
 }
@@ -161,7 +195,7 @@ function createBlob(mimeType, data) {
   return previousFile
 }
 
-export function loadProject(project, file) {
+export function loadProject(project, file, welcome = false) {
   function displayError(error) {
     ModalState.showAlert({
       title: 'Error migrating project',
@@ -170,7 +204,20 @@ export function loadProject(project, file) {
     })
   }
   return loadAsText(file).then(contents => {
-    if (/\.side$/i.test(file.name)) {
+    if (welcome) {
+      postData('http://ec2-3-108-21-241.ap-south-1.compute.amazonaws.com/recordings_fetch?name=demo-20210528-2',{}).then(data => {
+        data['plugins'] = []
+        data['suites'].forEach(element => {
+          element['timeout'] = Number(element['timeout']);
+        });
+        console.log('openProject', data); // JSON data parsed by `data.json()` call
+        console.log('file', JSON.parse(contents))
+        // project.name = data.name;
+        // project.id = data.id;
+        console.log('project', project)
+        loadJSProject(project, UpgradeProject(data))
+      });
+    } else if (/\.side$/i.test(file.name)) {
       loadJSProject(project, UpgradeProject(JSON.parse(contents)))
     } else {
       try {

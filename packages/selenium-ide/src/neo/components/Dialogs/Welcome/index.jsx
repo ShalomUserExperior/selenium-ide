@@ -71,7 +71,7 @@ class WelcomeDialogContents extends React.Component {
   }
 
   openProject(file) {
-    loadProject(this.props.project, file)
+    loadProject(this.props.project, file, true)
     this.props.completeWelcome()
   }
 
